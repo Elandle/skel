@@ -32,16 +32,16 @@ maxiter= 1000
 # Code configuration
 # Variables declared here are primarily for noting the exact setup a fidelity is calculated for when the results are looked at later.
 model= "Hubbard"
-normalization= "middle t fixed at Christandl value"
+# normalization= "middle t fixed at Christandl value"
 normalizationdata= "midChristandl"
 
 # Files to append results to; note data is appended each run and does not make a new file each run
 # Hubbardannealingresults: prints results in a way that is easier to read when looking at the txt file
 # Hubbardannealingresultsdata: results are printed in a way that is easier to import into something like pandas or excel
 # Hubbardannealingminima: prints local minima found; contains a space separating each iteration
-file= open("Hubbardannealingresults.txt", "a")
-filedata= open("Hubbardannealingresultsdata.txt", "a")
-fileminima= open("Hubbardannealingminima.txt", "a")
+# file= open("HubbardDualAnnealingMidChristandlResults.txt", "a")
+filedata= open("HubbardDualAnnealingMidChristandlData.txt", "a")
+fileminima= open("HubbardDualAnnealingMidChristandlMinima.txt", "a")
 
 # Functions used later for basic setting up
 # Generates states and basis
@@ -139,7 +139,7 @@ def printminima(x, f, context):
     tstring= ",".join(map(str, list(x[:(N//2-1)])+[christandl]+list(x[-3::-1]))) 
     startingstring= ",".join(map(str, starting))
     endingstring= ",".join(map(str, ending))
-    addminima= f"{normalizationdata} {maxiter} {1-f} {x[-1]} {x[-2]} {N} {u} {d} {startingstring} {endingstring} {tstring}\n"
+    addminima= f"{normalizationdata} {model} {1-f} {x[-1]} {x[-2]} {N} {u} {d} {startingstring} {endingstring} {tstring}\n"
     fileminima.write(addminima)
     fileminima.flush()
 
@@ -161,10 +161,7 @@ christandl= N/2
 if "bounds" not in globals():
     #                t's                               time          e
     bounds= tuple([(0, 100) for i in range(N//2-1)]+ [(0, 100)]+ [(0, 100)])
-
-# start timing the code just before the dual annealing iterations loops
-# prints in terminal the total code execution time; might want to change this to callback or per iteration
-timestart= time.time()
+    
 for i in range(iterations):
     result= scipy.optimize.dual_annealing(minfid, bounds= bounds, maxiter= maxiter, callback= printminima) # only line of actually doing dual annealing
     x= result.x # the rest of the lines are for printing data collected
@@ -173,17 +170,13 @@ for i in range(iterations):
     file.write(add)
 #   adddata= f"{normalizationdata} {maxiter} {fidelity} {x[-1]} {x[-2]} {N} {u} {d} {starting} {ending} {list(x[:(N//2-1)])+[christandl]+list(x[-3::-1])}"
     tstring= ",".join(map(str, list(x[:(N//2-1)])+[christandl]+list(x[-3::-1]))) 
-    startingstring= "|".join(map(str, starting))
-    endingstring= "|".join(map(str, ending))
-    adddata= f"{normalizationdata} {maxiter} {fidelity} {x[-1]} {x[-2]} {N} {u} {d} {startingstring} {endingstring} {tstring}\n"
+    startingstring= ",".join(map(str, starting))
+    endingstring= ",".join(map(str, ending))
+    adddata= f"{normalizationdata} {model} {fidelity} {x[-1]} {x[-2]} {N} {u} {d} {startingstring} {endingstring} {tstring}\n"
     filedata.write(adddata)
-    file.flush() # flush refreshes the txt files as the code is being run; rather than putting it all in when the code is done
+#    file.flush()  flush refreshes the txt files as the code is being run; rather than putting it all in when the code is done
     filedata.flush()
     fileminima.write("\n")
     fileminima.flush()
-timeend= time.time()
-timeamount= timeend- timestart
-print(f"Run time: {timeamount} seconds")
-
 
 
