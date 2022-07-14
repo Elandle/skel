@@ -27,8 +27,8 @@ Was able to get code to converge when t values were constrained to relatively lo
 Ideas: maybe there are not really many (or maybe there is actually just one) parameter sets for perfect transfer in this high t range, they are just 
 really easy to find. Could be worth looking at graphs of the form (sum(t), fidelity).
 
-High u and t values
--------------------
+High u and time values
+----------------------
 Similar to the previous thing mentioned.
 u and time values found tend to be relatively high, but not as high as t values.
 Ideas: from looking at data, I have a feeling that there might be a decent amount of perturbation room for u and time values while still keeping
