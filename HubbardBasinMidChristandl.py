@@ -40,7 +40,7 @@ normalizationdata= "midChristandl"
 # Hubbardannealingresults: prints results in a way that is easier to read when looking at the txt file
 # Hubbardannealingresultsdata: results are printed in a way that is easier to import into something like pandas or excel
 # Hubbardannealingminima: prints local minima found; contains a space separating each iteration
-file= open("Hubbardbasinhoppingresults.txt", "a")
+# file= open("Hubbardbasinhoppingresults.txt", "a")
 filedata= open("Hubbardbasinhoppingresultsdata.txt", "a")
 fileminima= open("Hubbardbasinhoppingminima.txt", "a")
 
@@ -164,15 +164,15 @@ for i in range(iterations):
     result= scipy.optimize.basinhopping(minfid, niter= niter, callback= printminima, x0= guess) # only line of actually doing dual annealing
     x= result.x # the rest of the lines are for printing data collected
     fidelity= 1- result.fun
-    add= f"fidelity= {fidelity}, u= {x[-1]}, time= {x[-2]}, t= {list(x[:(N//2-1)])+[christandl]+list(x[-3::-1])}, sites= {N}, ups= {u}, downs= {d}, starting= {starting}, ending= {ending}, model: {model}, normalization: {normalization}\n"
-    file.write(add)
+#    add= f"fidelity= {fidelity}, u= {x[-1]}, time= {x[-2]}, t= {list(x[:(N//2-1)])+[christandl]+list(x[-3::-1])}, sites= {N}, ups= {u}, downs= {d}, starting= {starting}, ending= {ending}, model: {model}, normalization: {normalization}\n"
+#    file.write(add)
 #   adddata= f"{normalizationdata} {niter} {fidelity} {x[-1]} {x[-2]} {N} {u} {d} {starting} {ending} {list(x[:(N//2-1)])+[christandl]+list(x[-3::-1])}"
     tstring= ",".join(map(str, list(x[:(N//2-1)])+[christandl]+list(x[-3::-1]))) 
     startingstring= ",".join(map(str, starting))
     endingstring= ",".join(map(str, ending))
     adddata= f"{normalizationdata} {niter} {fidelity} {x[-1]} {x[-2]} {N} {u} {d} {startingstring} {endingstring} {tstring}\n"
     filedata.write(adddata)
-    file.flush() # flush refreshes the txt files as the code is being run; rather than putting it all in when the code is done
+#    file.flush()  flush refreshes the txt files as the code is being run; rather than putting it all in when the code is done
     filedata.flush()
     fileminima.write("\n")
     fileminima.flush()
