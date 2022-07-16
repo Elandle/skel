@@ -1,8 +1,6 @@
-import matplotlib.pyplot
 import numpy
 import itertools
 import copy
-import random
 import scipy.linalg
 import scipy.optimize
 
@@ -12,17 +10,20 @@ import scipy.optimize
 # d: amount of down electrons
 # starting: where the electrons begin at (using [up, up, ..., down, down, ...] notation; not Fock) starting from site 0 to site N-1
 # ending: where to (hopefully) find the electrons to be at; using the same notation as starting
-# t: coupling values (N- 1 of them)
+# t: top row coupling values (N- 1 of them)
+# v: top to bottom row coupling values (N of them) 
 # time: time to evaluate the fidelity at 
 # e: interaction energy (usually denoted as u, but here it is e)
-N= 6
+N= 4
 u= 1
 d= 1
-starting= [0, N- 1]
-ending= [N- 1, 0]
-t= [32.83202954091803,96.73565364177868,4.714279048083176,96.73565364177868,32.83202954091803]
+starting= [0, 0]
+ending= [N- 1, N- 1]
 e= 10.5
-time= 86.98084358376835
+elow= 0.5
+time= 78.17648728526025
+t= [7.949900026684259,41.77263366151887,7.949900026684259]
+v= [0.34359241393842443,0.13134031859674203,0.13134031859674203,0.34359241393842443]
 
 # Functions used later for basic setting up
 # Generates states and basis
@@ -76,11 +77,11 @@ def sindex(s):
 # ---------------------------------------------------------------------------------------
 
 # generates hamiltonian
-def hammer(t, e):
+def hammer(t, v, e):
     hammil= numpy.zeros((slength, slength))
     for ii in range(slength):
         st= copy.copy(states[ii])
-        for a in itertools.product(range(u+ d), range(2)):
+        for a in itertools.product(range(u+ d), range(3)):
             new= copy.copy(st)
             newentry= 0
             if(0< st[a[0]]< N and a[1]== 0):
@@ -89,18 +90,34 @@ def hammer(t, e):
             elif(st[a[0]]< N-1 and a[1]== 1):
                 new[a[0]]= new[a[0]]+ 1
                 newentry= t[st[a[0]]]
+            elif(a[1]== 2):
+                newcopy= copy.copy(new)
+                hopslower= min(newcopy[a[0]], (newcopy[a[0]]+ N)%(2*N))
+                hopsupper= max(newcopy[a[0]], (newcopy[a[0]]+ N)%(2*N))
+                if a[0]< u:
+                    upelectron= True
+                else:
+                    upelectron= False
+                if upelectron:
+                    hopcount= sum(1 for iii in newcopy[:u] if hopslower< iii< hopsupper)
+                else:
+                    hopcount= sum(1 for iii in newcopy[u:u+d] if hopslower< iii< hopsupper)
+                hopsign= hopcount%2
+                new[a[0]]= (new[a[0]]+ N)%(2*N)
+                newentry= pow(-1, hopsign)*v[st[a[0]]%N]
             new= sortstate(new)
             if new in states:
-                hammil[ii, sindex(new)]= -newentry
+                hammil[ii, sindex(new)]= hammil[ii, sindex(new)]- newentry
         for jj in range(u):
-            if st[jj] in st[u: u+ d]: hammil[ii, ii]= e
-    return hammil
+            if st[jj]< N and st[jj] in st[u: u+ d]: hammil[ii, ii]= hammil[ii, ii]+ e
+            if st[jj]>= N and st[jj] in st[u: u+ d]: hammil[ii, ii]= hammil[ii, ii]+ elow
+    return hammil 
 
 # function for calculating fidelity
-def fid(t, time, e):
-    hamil= hammer(t, e)
+def fid(t, v, time, e, elow):
+    hamil= hammer(t, v, e)
     return (numpy.abs(scipy.linalg.expm(complex(0, -time)*hamil)@initial)**2)[state]
-# ---------------------------------------------------------------------------------------
+
 
 # Making the states and basis list, also initializing the states we are evolving from (initial) and trying to go to (using the state number of this)
 states= makestates()
@@ -112,6 +129,4 @@ state= sindex(ending)
 
 
 # print the fidelity
-print(f"Fidelity= {fid(t, time, e)}")
-
-
+print(f"Fidelity= {fid(t, v, time, e, elow)}")

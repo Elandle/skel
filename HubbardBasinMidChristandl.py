@@ -2,10 +2,8 @@ import matplotlib.pyplot
 import numpy
 import itertools
 import copy
-import random
 import scipy.linalg
 import scipy.optimize
-import time 
 
 # Variables deciding what we are trying to find the fidelity for
 # N: amount of sites; must be an even natural number for how this code is setup (code can easily be altered for different ones)
@@ -23,26 +21,21 @@ ending= [N- 1, N- 2, N- 1, N- 2]
 # guess= [t[0], t[1], t[2], ..., t[N/2-2], time, e]
 guess= [121.56653086333651,128.2915436095795, 64.56991243788157, 58.428531846879316]
 
-
-
-
-# Iterations to do dual annealing for, and maximum search iterations for each dual annealing run
+# Iterations to execute basin hopping for, and basin hopping iterations per execution
 iterations= 10
 niter= 100
 
 # Code configuration
 # Variables declared here are primarily for noting the exact setup a fidelity is calculated for when the results are looked at later.
 model= "Hubbard"
-normalization= "middle t fixed at Christandl value"
 normalizationdata= "midChristandl"
 
 # Files to append results to; note data is appended each run and does not make a new file each run
-# Hubbardannealingresults: prints results in a way that is easier to read when looking at the txt file
-# Hubbardannealingresultsdata: results are printed in a way that is easier to import into something like pandas or excel
-# Hubbardannealingminima: prints local minima found; contains a space separating each iteration
-# file= open("Hubbardbasinhoppingresults.txt", "a")
-filedata= open("Hubbardbasinhoppingresultsdata.txt", "a")
-fileminima= open("Hubbardbasinhoppingminima.txt", "a")
+# HubbardBasinMidChristandlData: results are printed in a way that is easier to import into something like pandas or excel
+# HubbardBasinMidChristandlMinima: prints local minima found; contains a space separating each iteration
+# The first file contains more "finalized" results of an iteration, while the second updates the progress of the code as it runs
+filedata= open("HubbardDualAnnealingMidChristandlData.txt", "a")
+fileminima= open("HubbardDualAnnealingMidChristandlMinima.txt", "a")
 
 # Functions used later for basic setting up
 # Generates states and basis
@@ -95,10 +88,9 @@ def sindex(s):
     return states.index(ss)
 # ---------------------------------------------------------------------------------------
 
-
-# Main functions used in dual annealing
+# Main functions used in basin hopping
 # hammer: make hamiltonian
-# minfid: calculates 1-fidelity; function for dual annealing to minimize
+# minfid: calculates 1-fidelity; function for basin hopping to minimize
 # ---------------------------------------------------------------------------------------
 def hammer(t, e):
     hammil= numpy.zeros((slength, slength))
@@ -120,7 +112,7 @@ def hammer(t, e):
             if st[jj] in st[u: u+ d]: hammil[ii, ii]= hammil[ii, ii]+ e
     return hammil
 
-# x: dual annealing requires the function to be minimized have its input be a vector, so the input is just x and we index what we want
+# Basin hopping requires the function to be minimized have its input be a vector, so the input is just x and we index what we want
 # mid Christandl value is hardcoded here for normalization; can change this if wanted
 # mid Christandl implicitly assumes an even amount of sites (because there is a middle coupling)
 
@@ -133,13 +125,12 @@ def minfid(x):
     return 1-(numpy.abs(scipy.linalg.expm(complex(0, -time)*hamil)@initial)**2)[state]
 # ---------------------------------------------------------------------------------------
 
-# callback function of dual annealing
-# is ran every time dual annealing finds a local minimum; purpose is to print the data of the local minimum
+# callback function of basin hopping
+# is ran every time basin hopping finds a local minimum; purpose is to print the data of the local minimum
 def printminima(x, f, context):
-    tstring= ",".join(map(str, list(x[:(N//2-1)])+[christandl]+list(x[-3::-1]))) 
-    startingstring= ",".join(map(str, starting))
-    endingstring= ",".join(map(str, ending))
-    addminima= f"{normalizationdata} {niter} {1-f} {x[-1]} {x[-2]} {N} {u} {d} {startingstring} {endingstring} {tstring}\n"
+    tstring= ",".join(map(str, list(x[:(N//2-1)])+[christandl]+list(x[-3::-1])))
+    #               midChristandl   Hubbard  fidel    u      time   N   u   d   starting state   ending state      t
+    addminima= f"{normalizationdata} {model} {1-f} {x[-1]} {x[-2]} {N} {u} {d} {startingstring} {endingstring} {tstring}\n"
     fileminima.write(addminima)
     fileminima.flush()
 
@@ -151,34 +142,27 @@ initial= numpy.zeros(slength)
 initial[sindex(starting)]= 1
 state= sindex(ending) 
 
+# Setting up some strings used for printing results and minima
+startingstring= ",".join(map(str, starting))
+endingstring= ",".join(map(str, ending))
 
-# Dual annealing
+
+# Basin hopping
 # -------------------------------------------------------------------------------
 # Christandl value for middle t normalization
 christandl= N/2
 
-# start timing the code just before the dual annealing iterations loops
-# prints in terminal the total code execution time; might want to change this to callback or per iteration
-timestart= time.time()
 for i in range(iterations):
-    result= scipy.optimize.basinhopping(minfid, niter= niter, callback= printminima, x0= guess) # only line of actually doing dual annealing
-    x= result.x # the rest of the lines are for printing data collected
+    result= scipy.optimize.basinhopping(minfid, niter= niter, callback= printminima, x0= guess)
+    # the rest of the lines in the for loop are for printing data collected
+    x= result.x
     fidelity= 1- result.fun
-#    add= f"fidelity= {fidelity}, u= {x[-1]}, time= {x[-2]}, t= {list(x[:(N//2-1)])+[christandl]+list(x[-3::-1])}, sites= {N}, ups= {u}, downs= {d}, starting= {starting}, ending= {ending}, model: {model}, normalization: {normalization}\n"
-#    file.write(add)
-#   adddata= f"{normalizationdata} {niter} {fidelity} {x[-1]} {x[-2]} {N} {u} {d} {starting} {ending} {list(x[:(N//2-1)])+[christandl]+list(x[-3::-1])}"
-    tstring= ",".join(map(str, list(x[:(N//2-1)])+[christandl]+list(x[-3::-1]))) 
-    startingstring= ",".join(map(str, starting))
-    endingstring= ",".join(map(str, ending))
-    adddata= f"{normalizationdata} {niter} {fidelity} {x[-1]} {x[-2]} {N} {u} {d} {startingstring} {endingstring} {tstring}\n"
+    tstring= ",".join(map(str, list(x[:(N//2-1)])+[christandl]+list(x[-3::-1])))
+    #               midChristandl   Hubbard  fidel       u      time   N   u   d   starting state   ending state      t
+    adddata= f"{normalizationdata} {model} {fidelity} {x[-1]} {x[-2]} {N} {u} {d} {startingstring} {endingstring} {tstring}\n"
     filedata.write(adddata)
-#    file.flush()  flush refreshes the txt files as the code is being run; rather than putting it all in when the code is done
     filedata.flush()
     fileminima.write("\n")
     fileminima.flush()
-timeend= time.time()
-timeamount= timeend- timestart
-print(f"Run time: {timeamount} seconds")
-
 
 

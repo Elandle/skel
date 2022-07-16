@@ -5,40 +5,44 @@ import copy
 import scipy.linalg
 import scipy.optimize
 
+# Note: this code is a lot longer than it should be, since it has two cases depending on whether N is even or odd
+
 # Variables deciding what we are trying to find the fidelity for
 # N: amount of sites; must be an even natural number for how this code is setup (code can easily be altered for different ones)
 # u: amount of up electrons
 # d: amount of down electrons
 # starting: where the electrons begin at (using [up, up, ..., down, down, ...] notation; not Fock) starting from site 0 to site N-1
 # ending: where to (hopefully) find the electrons to be at; using the same notation as starting
-N= 6
+# e: Coulomb energy (u), stays fixed as a normalization
+N= 7
 u= 1
 d= 1
 starting= [0, N- 1]
 ending= [N- 1, 0]
+e= 10.5
 
 # Initialize bounds on variables here if used, otherwise a chosen default bound will be used
 # Comment out if not being used.
 # Format: tuple of length 2 tuples. In each length 2 tuple is the variable range that the respective variable can be in.
-# (t[0] tuple, t[1] tuple, t[2] tuple, ..., t[middle- 1] tuple, time, e)
+# (t[0] tuple, t[1] tuple, t[2] tuple, ..., t[middle- 1] tuple, time)
 # bounds= ((,), (,), (,), (,), (,))
-bounds= tuple([(0, 100) for i in range(N//2-1)]+ [(0, 100)]+ [(1, 100)])
+bounds= tuple([(0, 100) for i in range(N//2)]+ [(0, 100)])
 
 # Iterations to do dual annealing for, and maximum search iterations for each dual annealing run
-iterations= 10
-maxiter= 1000
+iterations= 1
+maxiter= 100
 
 # Code configuration
 # Variables declared here are primarily for noting the exact setup a fidelity is calculated for when the results are looked at later.
 model= "Hubbard"
-normalizationdata= "midChristandl"
+normalizationdata= "fixedu"
 
 # Files to append results to; note data is appended each run and does not make a new file each run
-# HubbardDualAnnealingMidChristandlData: results are printed in a way that is easier to import into something like pandas or excel
-# HubbardDualAnnealingMidChristandlMinima: prints local minima found; contains a space separating each iteration
+# HubbardDualAnnealingFixedu: results are printed in a way that is easier to import into something like pandas or excel
+# HubbardDualAnnealingFixedu: prints local minima found; contains a space separating each iteration
 # The first file contains more "finalized" results of an iteration, while the second updates the progress of the code as it runs
-filedata= open("HubbardDualAnnealingMidChristandlData.txt", "a")
-fileminima= open("HubbardDualAnnealingMidChristandlMinima.txt", "a")
+filedata= open("HubbardDualAnnealingFixeduData.txt", "a")
+fileminima= open("HubbardDualAnnealingFixeduMinima.txt", "a")
 
 # Functions used later for basic setting up
 # Generates states and basis
@@ -116,24 +120,34 @@ def hammer(t, e):
     return hammil
 
 # Dual annealing requires the function to be minimized have its input be a vector, so the input is just x and we index what we want
-# mid Christandl value is hardcoded here for normalization; can change this if wanted
-# mid Christandl implicitly assumes an even amount of sites (because there is a middle coupling)
 
-# x=[t[0], t[1], t[2], ..., t[N/2-2], time, e]
-def minfid(x):
-    t= numpy.concatenate((x[:(N//2-1)], numpy.array([christandl]), x[-3::-1]))
-    time= x[-2]
-    e= x[-1]
+# x=[t[0], t[1], t[2], ..., t[N//2], time]
+def minfideven(x):
+    t= numpy.concatenate((x[:N//2], x[:N//2- 1][::-1]))
+    time= x[-1]
+    hamil= hammer(t, e)
+    return 1-(numpy.abs(scipy.linalg.expm(complex(0, -time)*hamil)@initial)**2)[state]
+def minfidodd(x):
+    t= numpy.concatenate((x[:-1], x[:-1][::-1]))
+    time= x[-1]
     hamil= hammer(t, e)
     return 1-(numpy.abs(scipy.linalg.expm(complex(0, -time)*hamil)@initial)**2)[state]
 # ---------------------------------------------------------------------------------------
 
 # callback function of dual annealing
 # is ran every time dual annealing finds a local minimum; purpose is to print the data of the local minimum
-def printminima(x, f, context):
-    tstring= ",".join(map(str, list(x[:(N//2-1)])+[christandl]+list(x[-3::-1])))
-    #               midChristandl   Hubbard  fidel    u      time   N   u   d   starting state   ending state      t
-    addminima= f"{normalizationdata} {model} {1-f} {x[-1]} {x[-2]} {N} {u} {d} {startingstring} {endingstring} {tstring}\n"
+def printminimaeven(x, f, context):
+    t= numpy.concatenate((x[:N//2], x[:N//2- 1][::-1]))
+    tstring= ",".join(map(str, list(t)))
+    #               fixedu          Hubbard  fidel  u   time    N   u   d   starting state   ending state      t
+    addminima= f"{normalizationdata} {model} {1-f} {e} {x[-1]} {N} {u} {d} {startingstring} {endingstring} {tstring}\n"
+    fileminima.write(addminima)
+    fileminima.flush()
+def printminimaodd(x, f, context):
+    t= numpy.concatenate((x[:-1], x[:-1][::-1]))
+    tstring= ",".join(map(str, list(t)))
+    #               fixedu          Hubbard  fidel  u   time    N   u   d   starting state   ending state      t
+    addminima= f"{normalizationdata} {model} {1-f} {e} {x[-1]} {N} {u} {d} {startingstring} {endingstring} {tstring}\n"
     fileminima.write(addminima)
     fileminima.flush()
 
@@ -152,27 +166,39 @@ endingstring= ",".join(map(str, ending))
 
 # Dual annealing
 # -------------------------------------------------------------------------------
-# Setting the Christandl value for middle t normalization
-christandl= N/2
 
 # Default variable bounds if none are declared earlier
 if "bounds" not in globals():
-    #                t's                               time          e
-    bounds= tuple([(0, 100) for i in range(N//2-1)]+ [(0, 100)]+ [(0, 100)])
-    
+    bounds= tuple([(0, 100) for i in range(N//2)]+ [(0, 100)])
+
 # Separating things printed if the files already has some stuff in it
 filedata.write("\n")
 fileminima.write("\n")
 
-for i in range(iterations):
-    result= scipy.optimize.dual_annealing(minfid, bounds= bounds, maxiter= maxiter, callback= printminima)
-    # the rest of the lines in the for loop are for printing data collected
-    x= result.x
-    fidelity= 1- result.fun
-    tstring= ",".join(map(str, list(x[:(N//2-1)])+[christandl]+list(x[-3::-1])))
-    #               midChristandl   Hubbard  fidel       u      time   N   u   d   starting state   ending state      t
-    adddata= f"{normalizationdata} {model} {fidelity} {x[-1]} {x[-2]} {N} {u} {d} {startingstring} {endingstring} {tstring}\n"
-    filedata.write(adddata)
-    filedata.flush()
-    fileminima.write("\n")
-    fileminima.flush()
+if N%2== 0:
+    for i in range(iterations):
+        result= scipy.optimize.dual_annealing(minfideven, bounds= bounds, maxiter= maxiter, callback= printminimaeven)
+        # the rest of the lines in the for loop are for printing data collected
+        x= result.x
+        fidelity= 1- result.fun
+        t= numpy.concatenate((x[:N//2], x[:N//2- 1][::-1]))
+        tstring= ",".join(map(str, list(t)))
+        #               fixedu         Hubbard   fidel     u    time   N   u   d   starting state   ending state      t
+        adddata= f"{normalizationdata} {model} {fidelity} {e} {x[-1]} {N} {u} {d} {startingstring} {endingstring} {tstring}\n"
+        filedata.write(adddata)
+        filedata.flush()
+        fileminima.write("\n")
+        fileminima.flush()
+else:
+    for i in range(iterations):
+        result= scipy.optimize.dual_annealing(minfidodd, bounds= bounds, maxiter= maxiter, callback= printminimaodd)
+        # the rest of the lines in the for loop are for printing data collected
+        x= result.x
+        fidelity= 1- result.fun
+        tstring= ",".join(map(str, list(numpy.concatenate((x[:-1], x[:-1][::-1])))))
+        #               fixedu         Hubbard   fidel     u    time   N   u   d   starting state   ending state      t
+        adddata= f"{normalizationdata} {model} {fidelity} {e} {x[-1]} {N} {u} {d} {startingstring} {endingstring} {tstring}\n"
+        filedata.write(adddata)
+        filedata.flush()
+        fileminima.write("\n")
+        fileminima.flush()
