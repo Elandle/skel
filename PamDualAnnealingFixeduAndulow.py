@@ -43,7 +43,7 @@ normalizationdata= "fixeduandulow"
 # PamDualAnnealingFixedu: prints local minima found; contains a space separating each iteration
 # The first file contains more "finalized" results of an iteration, while the second updates the progress of the code as it runs
 filedata= open("PamDualAnnealingFixeduData.txt", "a")
-fileminima= open("PambDualAnnealingFixeduMinima.txt", "a")
+fileminima= open("PamDualAnnealingFixeduMinima.txt", "a")
 
 # Functions used later for basic setting up
 # Generates states and basis
