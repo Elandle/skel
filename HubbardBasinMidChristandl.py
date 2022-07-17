@@ -22,7 +22,7 @@ ending= [N- 1, N- 2, N- 1, N- 2]
 guess= [121.56653086333651,128.2915436095795, 64.56991243788157, 58.428531846879316]
 
 # Iterations to execute basin hopping for, and basin hopping iterations per execution
-iterations= 10
+iterations= 10000000
 niter= 100
 
 # Code configuration

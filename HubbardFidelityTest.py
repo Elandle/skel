@@ -1,11 +1,27 @@
-import matplotlib.pyplot
 import numpy
 import itertools
 import copy
-import random
 import scipy.linalg
 import scipy.optimize
+# choose a method to input parameters to test the fidelity of
+# inputmethod= 0: input parameters to test as a string in the format of "data" files
+# inputmethod= 1: input parameters directly
+inputmethod= 0
 
+# inputmethod 0
+if inputmethod== 0:
+    run= "fixedu Hubbard 0.9656135374498824 10.5 16.019877463930737 6 1 1 0,5 5,0 8.800379212220031,97.90310877454964,91.67033124626336,97.90310877454964,8.800379212220031"
+    run= run.split()
+    e= float(run[3])
+    time= float(run[4])
+    N= int(run[5])
+    u= int(run[6])
+    d= int(run[7])
+    starting= [int(i) for i in run[8].split(",")]
+    ending= [int(i) for i in run[9].split(",")]
+    t= [float(i) for i in run[10].split(",")]
+
+# inputmethod 1
 # Variables deciding what we are trying to find the fidelity for
 # N: amount of sites
 # u: amount of up electrons
@@ -15,14 +31,15 @@ import scipy.optimize
 # t: coupling values (N- 1 of them)
 # time: time to evaluate the fidelity at 
 # e: interaction energy (usually denoted as u, but here it is e)
-N= 6
-u= 1
-d= 1
-starting= [0, N- 1]
-ending= [N- 1, 0]
-t= [32.83202954091803,96.73565364177868,4.714279048083176,96.73565364177868,32.83202954091803]
-e= 10.5
-time= 86.98084358376835
+if inputmethod== 1:
+    N= 6
+    u= 1
+    d= 1
+    starting= [0, N- 1]
+    ending= [N- 1, 0]
+    t= [32.83202954091803,96.73565364177868,4.714279048083176,96.73565364177868,32.83202954091803]
+    e= 10.5
+    time= 86.98084358376835
 
 # Functions used later for basic setting up
 # Generates states and basis
@@ -113,5 +130,3 @@ state= sindex(ending)
 
 # print the fidelity
 print(f"Fidelity= {fid(t, time, e)}")
-
-

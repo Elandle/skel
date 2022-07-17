@@ -3,6 +3,24 @@ import itertools
 import copy
 import scipy.linalg
 import scipy.optimize
+# choose a method to input parameters to test the fidelity of
+# inputmethod= 0: input parameters to test as a string in the format of "data" files
+# inputmethod= 1: input parameters directly
+inputmethod= 0
+
+if inputmethod== 0:
+    run= "fixeduandulow Pam 0.5344991639776946 0.5 8.260523833334446 4.787179862301293 6 2 2 0,1,0,1 4,5,4,5 10.0,5.676180554309135,9.517869207379908,5.676180554309135,10.0 0.9458895772903503,0.6156074255912841,0.6209481306200096,0.6209481306200096,0.6156074255912841,0.9458895772903503"
+    run= run.split()
+    e= float(run[3])
+    elow= float(run[4])
+    time= float(run[5])
+    N= int(run[6])
+    u= int(run[7])
+    d= int(run[8])
+    starting= [int(i) for i in run[9].split(",")]
+    ending= [int(i) for i in run[10].split(",")]
+    t= [float(i) for i in run[11].split(",")]
+    v= [float(i) for i in run[12].split(",")]
 
 # Variables deciding what we are trying to find the fidelity for
 # N: amount of sites
@@ -14,16 +32,17 @@ import scipy.optimize
 # v: top to bottom row coupling values (N of them) 
 # time: time to evaluate the fidelity at 
 # e: interaction energy (usually denoted as u, but here it is e)
-N= 4
-u= 1
-d= 1
-starting= [0, 0]
-ending= [N- 1, N- 1]
-e= 10.5
-elow= 0.5
-time= 78.17648728526025
-t= [7.949900026684259,41.77263366151887,7.949900026684259]
-v= [0.34359241393842443,0.13134031859674203,0.13134031859674203,0.34359241393842443]
+if inputmethod== 1:
+    N= 4
+    u= 1
+    d= 1
+    starting= [0, 0]
+    ending= [N- 1, N- 1]
+    e= 0.5
+    elow= 10.5
+    time= 75.56654811452918
+    t= [2.4139484426251574,77.77211814669997,2.4139484426251574]
+    v= [0.2315576433372141,1.8691993002878327,1.8691993002878327,0.2315576433372141]
 
 # Functions used later for basic setting up
 # Generates states and basis

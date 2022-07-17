@@ -13,37 +13,36 @@ import scipy.optimize
 # starting: where the electrons begin at (using [up, up, ..., down, down, ...] notation; not Fock) starting from site 0 to site N-1
 # ending: where to (hopefully) find the electrons to be at; using the same notation as starting
 # e: Coulomb energy (u), stays fixed as a normalization
-N= 4
+N= 6
 u= 2
 d= 2
 starting= [0, 1, 0, 1]
 ending= [N- 2, N- 1, N- 2, N- 1]
 e= 0.5
-elow= 10.5
 
 # Initialize bounds on variables here if used, otherwise a chosen default bound will be used
 # Comment out if not being used.
 # Format: tuple of length 2 tuples. In each length 2 tuple is the variable range that the respective variable can be in.
 # (t[0] tuple, t[1] tuple, t[2] tuple, ..., t[middle- 1] tuple, time)
 # bounds= ((,), (,), (,), (,), (,))
-#                            t                                  v                       time
-bounds= tuple([(0, 100) for i in range(N//2)]+ [(0.1, 2) for i in range((N+ 1)//2)]+ [(0, 120)])
+#                            t                                  v                       time         ulow
+bounds= tuple([(0, 100) for i in range(N//2)]+ [(0.1, 2) for i in range((N+ 1)//2)]+ [(0, 100)]+ [(5, 20)])
 
 # Iterations to do dual annealing for, and maximum search iterations for each dual annealing run
 iterations= 1
-maxiter= 1
+maxiter= 100
 
 # Code configuration
 # Variables declared here are primarily for noting the exact setup a fidelity is calculated for when the results are looked at later.
 model= "Pam"
-normalizationdata= "fixeduandulow"
+normalizationdata= "fixedu"
 
 # Files to append results to; note data is appended each run and does not make a new file each run
 # PamDualAnnealingFixedu: results are printed in a way that is easier to import into something like pandas or excel
 # PamDualAnnealingFixedu: prints local minima found; contains a space separating each iteration
 # The first file contains more "finalized" results of an iteration, while the second updates the progress of the code as it runs
-filedata= open("PamDualAnnealingFixeduAndulowData.txt", "a")
-fileminima= open("PamDualAnnealingFixeduAndulowMinima.txt", "a")
+filedata= open("PamDualAnnealingFixeduData.txt", "a")
+fileminima= open("PamDualAnnealingFixeduMinima.txt", "a")
 
 # Functions used later for basic setting up
 # Generates states and basis
@@ -137,17 +136,19 @@ def hammer(t, v, e, elow):
 
 # Dual annealing requires the function to be minimized have its input be a vector, so the input is just x and we index what we want
 
-# x=[t[0], t[1], t[2], ..., t[N//2], v[0], v[1], ..., time]
+# x=[t[0], t[1], t[2], ..., t[N//2], v[0], v[1], ..., time, elow]
 def minfideven(x):
     t= numpy.concatenate((x[:N//2], x[:N//2- 1][::-1]))
-    v= numpy.concatenate((x[N//2:-1], x[N//2:-1][::-1]))
-    time= x[-1]
+    v= numpy.concatenate((x[N//2:-2], x[N//2:-2][::-1]))
+    time= x[-2]
+    elow= x[-1]
     hamil= hammer(t, v, e, elow)
     return 1-(numpy.abs(scipy.linalg.expm(complex(0, -time)*hamil)@initial)**2)[state]
 def minfidodd(x):
     t= numpy.concatenate((x[:N//2], x[:N//2][::-1]))
-    v= numpy.concatenate((x[N//2:-1], x[N//2:-2][::-1]))
-    time= x[-1]
+    v= numpy.concatenate((x[N//2:-2], x[N//2:-3][::-1]))
+    time= x[-2]
+    elow= x[-1]
     hamil= hammer(t, v, e, elow)
     return 1-(numpy.abs(scipy.linalg.expm(complex(0, -time)*hamil)@initial)**2)[state]
 # ---------------------------------------------------------------------------------------
@@ -156,20 +157,20 @@ def minfidodd(x):
 # is ran every time dual annealing finds a local minimum; purpose is to print the data of the local minimum
 def printminimaeven(x, f, context):
     t= numpy.concatenate((x[:N//2], x[:N//2- 1][::-1]))
-    v= numpy.concatenate((x[N//2:-1], x[N//2:-1][::-1]))
+    v= numpy.concatenate((x[N//2:-2], x[N//2:-2][::-1]))
     tstring= ",".join(map(str, list(t)))
     vstring= ",".join(map(str, list(v)))
     #               fixedu           Pam   fidel  u   ulow   time   N   u   d   starting state   ending state        t      v
-    addminima= f"{normalizationdata} {model} {1-f} {e} {elow} {x[-1]} {N} {u} {d} {startingstring} {endingstring} {tstring} {vstring}\n"
+    addminima= f"{normalizationdata} {model} {1-f} {e} {x[-1]} {x[-2]} {N} {u} {d} {startingstring} {endingstring} {tstring} {vstring}\n"
     fileminima.write(addminima)
     fileminima.flush()
 def printminimaodd(x, f, context):
     t= numpy.concatenate((x[:N//2], x[:N//2][::-1]))
-    v= numpy.concatenate((x[N//2:-1], x[N//2:-2][::-1]))
+    v= numpy.concatenate((x[N//2:-2], x[N//2:-3][::-1]))
     tstring= ",".join(map(str, list(t)))
     vstring= ",".join(map(str, list(v)))
     #               fixedu           Pam   fidel  u   ulow   time   N   u   d   starting state   ending state        t      v
-    addminima= f"{normalizationdata} {model} {1-f} {e} {elow} {x[-1]} {N} {u} {d} {startingstring} {endingstring} {tstring} {vstring}\n"
+    addminima= f"{normalizationdata} {model} {1-f} {e} {x[-1]} {x[-2]} {N} {u} {d} {startingstring} {endingstring} {tstring} {vstring}\n"
     fileminima.write(addminima)
     fileminima.flush()
 
@@ -191,7 +192,8 @@ endingstring= ",".join(map(str, ending))
 
 # Default variable bounds if none are declared earlier
 if "bounds" not in globals():
-    bounds= tuple([(0, 100) for i in range(N//2)]+ [(0, 100) for i in range((N+ 1)//2)]+ [(0, 100)])
+    #                           t                                v                          time        ulow
+    bounds= tuple([(0, 100) for i in range(N//2)]+ [(0, 100) for i in range((N+ 1)//2)]+ [(0, 100)]+ [(1, 100)])
 
 # Separating things printed if the files already has some stuff in it
 filedata.write("\n")
@@ -204,11 +206,11 @@ if N%2== 0:
         x= result.x
         fidelity= 1- result.fun
         t= numpy.concatenate((x[:N//2], x[:N//2- 1][::-1]))
-        v= numpy.concatenate((x[N//2:-1], x[N//2:-1][::-1]))
+        v= numpy.concatenate((x[N//2:-2], x[N//2:-2][::-1]))
         tstring= ",".join(map(str, list(t)))
         vstring= ",".join(map(str, list(v)))
-        #               fixedu           Pam   fidel  u   ulow   time   N   u   d   starting state   ending state      t      v
-        adddata= f"{normalizationdata} {model} {fidelity} {e} {elow} {x[-1]} {N} {u} {d} {startingstring} {endingstring} {tstring} {vstring}\n"
+        #               fixedu           Pam      fidel    u   ulow   time   N   u   d   starting state   ending state      t      v
+        adddata= f"{normalizationdata} {model} {fidelity} {e} {x[-1]} {x[-2]} {N} {u} {d} {startingstring} {endingstring} {tstring} {vstring}\n"
         filedata.write(adddata)
         filedata.flush()
         fileminima.write("\n")
@@ -220,11 +222,11 @@ else:
         x= result.x
         fidelity= 1- result.fun
         t= numpy.concatenate((x[:N//2], x[:N//2][::-1]))
-        v= numpy.concatenate((x[N//2:-1], x[N//2:-2][::-1]))
+        v= numpy.concatenate((x[N//2:-2], x[N//2:-3][::-1]))
         tstring= ",".join(map(str, list(t)))
         vstring= ",".join(map(str, list(v)))
-        #               fixedu           Pam   fidel  u   ulow   time   N   u   d           starting state   ending state      t      v
-        adddata= f"{normalizationdata} {model} {fidelity} {e} {elow} {x[-1]} {N} {u} {d} {startingstring} {endingstring} {tstring} {vstring}\n"
+        #               fixedu           Pam   fidel       u   ulow   time   N   u   d           starting state   ending state      t      v
+        adddata= f"{normalizationdata} {model} {fidelity} {e} {x[-1]} {x[-2]} {N} {u} {d} {startingstring} {endingstring} {tstring} {vstring}\n"
         filedata.write(adddata)
         filedata.flush()
         fileminima.write("\n")

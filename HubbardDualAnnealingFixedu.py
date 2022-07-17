@@ -1,4 +1,3 @@
-import matplotlib.pyplot
 import numpy
 import itertools
 import copy
@@ -14,7 +13,7 @@ import scipy.optimize
 # starting: where the electrons begin at (using [up, up, ..., down, down, ...] notation; not Fock) starting from site 0 to site N-1
 # ending: where to (hopefully) find the electrons to be at; using the same notation as starting
 # e: Coulomb energy (u), stays fixed as a normalization
-N= 7
+N= 6
 u= 1
 d= 1
 starting= [0, N- 1]
@@ -30,7 +29,7 @@ bounds= tuple([(0, 100) for i in range(N//2)]+ [(0, 100)])
 
 # Iterations to do dual annealing for, and maximum search iterations for each dual annealing run
 iterations= 1
-maxiter= 100
+maxiter= 10
 
 # Code configuration
 # Variables declared here are primarily for noting the exact setup a fidelity is calculated for when the results are looked at later.
