@@ -13,12 +13,12 @@ import scipy.optimize
 # starting: where the electrons begin at (using [up, up, ..., down, down, ...] notation; not Fock) starting from site 0 to site N-1
 # ending: where to (hopefully) find the electrons to be at; using the same notation as starting
 # e: Coulomb energy (u), stays fixed as a normalization
-N= 4
-u= 2
-d= 2
-starting= [0, 1, 0, 1]
-ending= [N- 2, N- 1, N- 2, N- 1]
-e= 0.5
+N= 8
+u= 1
+d= 1
+starting= [0, 0]
+ending= [N- 1, N- 1]
+e= 0.0
 elow= 10.5
 
 # Initialize bounds on variables here if used, otherwise a chosen default bound will be used
@@ -27,11 +27,11 @@ elow= 10.5
 # (t[0] tuple, t[1] tuple, t[2] tuple, ..., t[middle- 1] tuple, time)
 # bounds= ((,), (,), (,), (,), (,))
 #                            t                                  v                       time
-bounds= tuple([(0, 100) for i in range(N//2)]+ [(0.1, 2) for i in range((N+ 1)//2)]+ [(0, 120)])
+bounds= tuple([(0, 10) for i in range(N//2)]+ [(0.1, 5) for i in range((N+ 1)//2)]+ [(0, 500)])
 
 # Iterations to do dual annealing for, and maximum search iterations for each dual annealing run
 iterations= 1
-maxiter= 1
+maxiter= 1000000
 
 # Code configuration
 # Variables declared here are primarily for noting the exact setup a fidelity is calculated for when the results are looked at later.
@@ -65,7 +65,7 @@ def sortstate(s):
     sortdowns.sort()
     return sortups+ sortdowns
 def makestates():
-    x= [i for i in range(N)]
+    x= [i for i in range(2*N)]
     z= itertools.product(x, repeat= u+ d)
     z= list(z)
     for a in z[:]:
@@ -79,11 +79,16 @@ def makestates():
     sorting= [sortstate(a) for a in states]
     sorting.sort()
     states= sorting
+    states= [list(s) for s in set(tuple(ss) for ss in states)]
+    sorting= [sortstate(a) for a in states]
+    sorting.sort()
+    states= sorting
     return states
 def makebasis(states):
+    statess= copy.copy(states)
     basis= []
-    for a in states:
-        x= [0 for i in range(2*N)]
+    for a in statess:
+        x= [0 for i in range(2*2*N)]
         for i in range(u):
             x[a[i]]= x[a[i]]+ 1
         for i in range(d):
@@ -96,9 +101,7 @@ def sindex(s):
     return states.index(ss)
 # ---------------------------------------------------------------------------------------
 
-# Main functions used in dual annealing
-# hammer: make hamiltonian
-# minfid: calculates 1-fidelity; function for dual annealing to minimize
+# generates hamiltonian
 def hammer(t, v, e, elow):
     hammil= numpy.zeros((slength, slength))
     for ii in range(slength):

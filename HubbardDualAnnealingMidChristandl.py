@@ -74,6 +74,10 @@ def makestates():
     sorting= [sortstate(a) for a in states]
     sorting.sort()
     states= sorting
+    states= [list(s) for s in set(tuple(ss) for ss in states)]
+    sorting= [sortstate(a) for a in states]
+    sorting.sort()
+    states= sorting
     return states
 def makebasis(states):
     basis= []

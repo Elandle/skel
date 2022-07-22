@@ -3,13 +3,14 @@ import itertools
 import copy
 import scipy.linalg
 import scipy.optimize
+import matplotlib.pyplot
 # choose a method to input parameters to test the fidelity of
 # inputmethod= 0: input parameters to test as a string in the format of "data" files
 # inputmethod= 1: input parameters directly
 inputmethod= 0
 
 if inputmethod== 0:
-    run= "fixeduandulow Pam 0.5344991639776946 0.5 8.260523833334446 4.787179862301293 6 2 2 0,1,0,1 4,5,4,5 10.0,5.676180554309135,9.517869207379908,5.676180554309135,10.0 0.9458895772903503,0.6156074255912841,0.6209481306200096,0.6209481306200096,0.6156074255912841,0.9458895772903503"
+    run= "fixeduandulow Pam 0.9714766204770491 0.5 10.5 69.23215658719987 4 1 1 0,0 3,3 96.3347313107792,65.66424525199076,96.3347313107792 0.6510978619097898,0.8478977201560912,0.8478977201560912,0.6510978619097898"
     run= run.split()
     e= float(run[3])
     elow= float(run[4])
@@ -33,16 +34,16 @@ if inputmethod== 0:
 # time: time to evaluate the fidelity at 
 # e: interaction energy (usually denoted as u, but here it is e)
 if inputmethod== 1:
-    N= 4
+    N= 6
     u= 1
     d= 1
-    starting= [0, 0]
-    ending= [N- 1, N- 1]
+    t= [4.15211, 91.03207, 52.90782, 91.03207, 4.15211]
+    v= [0.3961, 0.80875, 1.13669, 1.13669, 0.80875, 0.3961]
     e= 0.5
     elow= 10.5
-    time= 75.56654811452918
-    t= [2.4139484426251574,77.77211814669997,2.4139484426251574]
-    v= [0.2315576433372141,1.8691993002878327,1.8691993002878327,0.2315576433372141]
+    starting= [0, 5]
+    ending= [5, 0]
+    time= 37.90272094375652
 
 # Functions used later for basic setting up
 # Generates states and basis
@@ -64,7 +65,7 @@ def sortstate(s):
     sortdowns.sort()
     return sortups+ sortdowns
 def makestates():
-    x= [i for i in range(N)]
+    x= [i for i in range(2*N)]
     z= itertools.product(x, repeat= u+ d)
     z= list(z)
     for a in z[:]:
@@ -78,11 +79,16 @@ def makestates():
     sorting= [sortstate(a) for a in states]
     sorting.sort()
     states= sorting
+    states= [list(s) for s in set(tuple(ss) for ss in states)]
+    sorting= [sortstate(a) for a in states]
+    sorting.sort()
+    states= sorting
     return states
 def makebasis(states):
+    statess= copy.copy(states)
     basis= []
-    for a in states:
-        x= [0 for i in range(2*N)]
+    for a in statess:
+        x= [0 for i in range(2*2*N)]
         for i in range(u):
             x[a[i]]= x[a[i]]+ 1
         for i in range(d):
@@ -96,7 +102,7 @@ def sindex(s):
 # ---------------------------------------------------------------------------------------
 
 # generates hamiltonian
-def hammer(t, v, e):
+def hammer(t, v, e, elow):
     hammil= numpy.zeros((slength, slength))
     for ii in range(slength):
         st= copy.copy(states[ii])
@@ -134,7 +140,11 @@ def hammer(t, v, e):
 
 # function for calculating fidelity
 def fid(t, v, time, e, elow):
-    hamil= hammer(t, v, e)
+    hamil= hammer(t, v, e, elow)
+    matplotlib.pyplot.imshow((numpy.abs(scipy.linalg.expm(complex(0, -time)*hamil))**2), cmap="bwr", vmin= -1, vmax= 1)
+    matplotlib.pyplot.colorbar()
+    matplotlib.pyplot.gcf().set_dpi(400)
+    matplotlib.pyplot.show()
     return (numpy.abs(scipy.linalg.expm(complex(0, -time)*hamil)@initial)**2)[state]
 
 

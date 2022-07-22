@@ -14,10 +14,10 @@ import scipy.optimize
 # ending: where to (hopefully) find the electrons to be at; using the same notation as starting
 # e: Coulomb energy (u), stays fixed as a normalization
 N= 6
-u= 1
-d= 1
-starting= [0, N- 1]
-ending= [N- 1, 0]
+u= 2
+d= 2
+starting= [0, 1, 0, 1]
+ending= [N- 1, N- 2, N- 1, N- 2]
 e= 10.5
 
 # Initialize bounds on variables here if used, otherwise a chosen default bound will be used
@@ -29,7 +29,7 @@ bounds= tuple([(0, 100) for i in range(N//2)]+ [(0, 100)])
 
 # Iterations to do dual annealing for, and maximum search iterations for each dual annealing run
 iterations= 1
-maxiter= 10
+maxiter= 1000000
 
 # Code configuration
 # Variables declared here are primarily for noting the exact setup a fidelity is calculated for when the results are looked at later.
@@ -77,6 +77,10 @@ def makestates():
     sorting= [sortstate(a) for a in states]
     sorting.sort()
     states= sorting
+    states= [list(s) for s in set(tuple(ss) for ss in states)]
+    sorting= [sortstate(a) for a in states]
+    sorting.sort()
+    states= sorting
     return states
 def makebasis(states):
     basis= []
@@ -115,7 +119,7 @@ def hammer(t, e):
             if new in states:
                 hammil[ii, sindex(new)]= -newentry
         for jj in range(u):
-            if st[jj] in st[u: u+ d]: hammil[ii, ii]= e
+            if st[jj] in st[u: u+ d]: hammil[ii, ii]= hammil[ii, ii]+ e
     return hammil
 
 # Dual annealing requires the function to be minimized have its input be a vector, so the input is just x and we index what we want

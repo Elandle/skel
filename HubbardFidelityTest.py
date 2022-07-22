@@ -3,6 +3,7 @@ import itertools
 import copy
 import scipy.linalg
 import scipy.optimize
+import matplotlib.pyplot
 # choose a method to input parameters to test the fidelity of
 # inputmethod= 0: input parameters to test as a string in the format of "data" files
 # inputmethod= 1: input parameters directly
@@ -10,7 +11,7 @@ inputmethod= 0
 
 # inputmethod 0
 if inputmethod== 0:
-    run= "fixedu Hubbard 0.9656135374498824 10.5 16.019877463930737 6 1 1 0,5 5,0 8.800379212220031,97.90310877454964,91.67033124626336,97.90310877454964,8.800379212220031"
+    run= "fixedu Hubbard 0.9954815334810752 10.5 42.60826684158175 4 2 2 0,1,0,1 3,2,3,2 67.38944573099911,0.6651242997716413,67.38944573099911"
     run= run.split()
     e= float(run[3])
     time= float(run[4])
@@ -75,6 +76,10 @@ def makestates():
     sorting= [sortstate(a) for a in states]
     sorting.sort()
     states= sorting
+    states= [list(s) for s in set(tuple(ss) for ss in states)]
+    sorting= [sortstate(a) for a in states]
+    sorting.sort()
+    states= sorting
     return states
 def makebasis(states):
     basis= []
@@ -116,6 +121,10 @@ def hammer(t, e):
 # function for calculating fidelity
 def fid(t, time, e):
     hamil= hammer(t, e)
+    matplotlib.pyplot.imshow((numpy.abs(scipy.linalg.expm(complex(0, -time)*hamil))**2), cmap="bwr", vmin= -1, vmax= 1)
+    matplotlib.pyplot.colorbar()
+    matplotlib.pyplot.gcf().set_dpi(400)
+    matplotlib.pyplot.show()
     return (numpy.abs(scipy.linalg.expm(complex(0, -time)*hamil)@initial)**2)[state]
 # ---------------------------------------------------------------------------------------
 
