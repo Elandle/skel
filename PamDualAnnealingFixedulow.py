@@ -4,8 +4,6 @@ import copy
 import scipy.linalg
 import scipy.optimize
 
-# Note: this code is a lot longer than it should be, since it has two cases depending on whether N is even or odd
-
 # Variables deciding what we are trying to find the fidelity for
 # N: amount of sites; must be an even natural number for how this code is setup (code can easily be altered for different ones)
 # u: amount of up electrons
@@ -20,17 +18,47 @@ starting= [0, N- 1]
 ending= [N- 1, 0]
 elow= 10.5
 
-# Initialize bounds on variables here if used, otherwise a chosen default bound will be used
-# Comment out if not being used.
+# Guess for minimum to find
+# Set guessmethod to a value other than 0 or 1 if not being used
+# Care must be taken using guesses, since they are setup dependent
+# guessmethod== 0 takes in as a string a run "data" string
+# guessmethod== 1 uses a manually defined guess
+guessmethod= 0
+if guessmethod== 0:
+    guessrun= "fixeduandulow Pam 0.9965550995321618 0.0 10.5 32.608245099366044 8 1 1 0,0 7,7 3.423311545248468,0.482022092133021,4.99999181682617,2.313131313392421,4.99999181682617,0.482022092133021,3.423311545248468 0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1"
+    guessrun= guessrun.split()
+    e= float(guessrun[3])
+    elow= float(guessrun[4])
+    guesstime= float(guessrun[5])
+    N= int(guessrun[6])
+    u= int(guessrun[7])
+    d= int(guessrun[8])
+    starting= [int(i) for i in guessrun[9].split(",")]
+    ending= [int(i) for i in guessrun[10].split(",")]
+    guesst= [float(i) for i in guessrun[11].split(",")]
+    guessv= [float(i) for i in guessrun[12].split(",")]
+    guess= guesst[:N//2]+ guessv[:(N+ 1)//2]+ [guesstime]+ [e]
+if guessmethod== 1:
+    #       t   v   time    u
+    guess= [                 ]
+
+# Initialize bounds on variables
+# boundsmethod== 0 uses manually defined bounds
+# boundsmethod== 1 uses a default bound setup
+# Code is only setup for boundsmethod taking the value 0 or 1, since having no bounds might result in something unphysical
 # Format: tuple of length 2 tuples. In each length 2 tuple is the variable range that the respective variable can be in.
 # (t[0] tuple, t[1] tuple, t[2] tuple, ..., t[middle- 1] tuple, time)
 # bounds= ((,), (,), (,), (,), (,))
-#                            t                                  v                       time         u
-bounds= tuple([(0, 100) for i in range(N//2)]+ [(0.1, 5) for i in range((N+ 1)//2)]+ [(0, 100)]+ [(0, 5)])
+boundsmethod= 0
+if boundsmethod== 0:
+    #                            t                                  v                       time      e
+    bounds= tuple([(0, 5) for i in range(N//2)]+ [(0.1, 5) for i in range((N+ 1)//2)]+ [(0, 100)]+ [(0, 5)])
+if boundsmethod== 1:
+    bounds= tuple([(0, 100) for i in range(N//2)]+ [(0, 100) for i in range((N+ 1)//2)]+ [(0, 100)]+ [(0, 100)])
 
 # Iterations to do dual annealing for, and maximum search iterations for each dual annealing run
 iterations= 1
-maxiter= 10000
+maxiter= 1000000
 
 # Code configuration
 # Variables declared here are primarily for noting the exact setup a fidelity is calculated for when the results are looked at later.
@@ -192,19 +220,16 @@ endingstring= ",".join(map(str, ending))
 
 # Dual annealing
 # -------------------------------------------------------------------------------
-
-# Default variable bounds if none are declared earlier
-if "bounds" not in globals():
-    #                           t                                v                          time        ulow
-    bounds= tuple([(0, 100) for i in range(N//2)]+ [(0, 100) for i in range((N+ 1)//2)]+ [(0, 100)]+ [(1, 100)])
-
 # Separating things printed if the files already has some stuff in it
 filedata.write("\n")
 fileminima.write("\n")
 
 if N%2== 0:
     for i in range(iterations):
-        result= scipy.optimize.dual_annealing(minfideven, bounds= bounds, maxiter= maxiter, callback= printminimaeven)
+        if "guess" in globals():
+            result= scipy.optimize.dual_annealing(minfideven, bounds= bounds, maxiter= maxiter, callback= printminimaeven, x0= guess)
+        else:
+            result= scipy.optimize.dual_annealing(minfideven, bounds= bounds, maxiter= maxiter, callback= printminimaeven)
         # the rest of the lines in the for loop are for printing data collected
         x= result.x
         fidelity= 1- result.fun
@@ -220,7 +245,10 @@ if N%2== 0:
         fileminima.flush()
 else:
     for i in range(iterations):
-        result= scipy.optimize.dual_annealing(minfidodd, bounds= bounds, maxiter= maxiter, callback= printminimaodd)
+        if "guess" in globals():
+            result= scipy.optimize.dual_annealing(minfidodd, bounds= bounds, maxiter= maxiter, callback= printminimaodd, x0= guess)
+        else:
+            result= scipy.optimize.dual_annealing(minfidodd, bounds= bounds, maxiter= maxiter, callback= printminimaodd)
         # the rest of the lines in the for loop are for printing data collected
         x= result.x
         fidelity= 1- result.fun

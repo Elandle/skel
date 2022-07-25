@@ -124,6 +124,11 @@ def fid(t, time, e):
     matplotlib.pyplot.imshow((numpy.abs(scipy.linalg.expm(complex(0, -time)*hamil))**2), cmap="bwr", vmin= -1, vmax= 1)
     matplotlib.pyplot.colorbar()
     matplotlib.pyplot.gcf().set_dpi(400)
+    imshowv= max(abs(numpy.amin(hamil)), abs(numpy.amax(hamil)))
+    two= matplotlib.pyplot.figure()
+    matplotlib.pyplot.imshow(hamil, cmap= "bwr", vmin= -imshowv, vmax= imshowv)
+    matplotlib.pyplot.colorbar()
+    matplotlib.pyplot.gcf().set_dpi(400)
     matplotlib.pyplot.show()
     return (numpy.abs(scipy.linalg.expm(complex(0, -time)*hamil)@initial)**2)[state]
 # ---------------------------------------------------------------------------------------

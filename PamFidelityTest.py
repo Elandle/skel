@@ -10,7 +10,7 @@ import matplotlib.pyplot
 inputmethod= 0
 
 if inputmethod== 0:
-    run= "fixedulow Pam 0.5209995563652069 0.8805353855714202 10.5 1.3696840479969978 6 1 1 0,5 5,0 81.12699993047863,3.0516478260979056,80.38069837260991,3.0516478260979056,81.12699993047863 4.005413938405175,4.177918877544064,0.813534710074617,0.813534710074617,4.177918877544064,4.005413938405175"
+    run= "fixeduandulow Pam 0.9965550995321618 0.0 10.5 32.608245099366044 8 1 1 0,0 7,7 3.423311545248468,0.482022092133021,4.99999181682617,2.313131313392421,4.99999181682617,0.482022092133021,3.423311545248468 0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1"
     run= run.split()
     e= float(run[3])
     elow= float(run[4])
@@ -141,7 +141,13 @@ def hammer(t, v, e, elow):
 # function for calculating fidelity
 def fid(t, v, time, e, elow):
     hamil= hammer(t, v, e, elow)
-    matplotlib.pyplot.imshow((numpy.abs(scipy.linalg.expm(complex(0, -time)*hamil))**2), cmap="bwr", vmin= -1, vmax= 1)
+    one= matplotlib.pyplot.figure()
+    matplotlib.pyplot.imshow((numpy.abs(scipy.linalg.expm(complex(0, -time)*hamil))**2), cmap= "bwr", vmin= -1, vmax= 1)
+    matplotlib.pyplot.colorbar()
+    matplotlib.pyplot.gcf().set_dpi(400)
+    imshowv= max(abs(numpy.amin(hamil)), abs(numpy.amax(hamil)))
+    two= matplotlib.pyplot.figure()
+    matplotlib.pyplot.imshow(hamil, cmap= "bwr", vmin= -imshowv, vmax= imshowv)
     matplotlib.pyplot.colorbar()
     matplotlib.pyplot.gcf().set_dpi(400)
     matplotlib.pyplot.show()
