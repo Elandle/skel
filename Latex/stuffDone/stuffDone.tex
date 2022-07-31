@@ -1,0 +1,272 @@
+\input{mypreamble.tex}
+\title{Some Pam and Hubbard stuff}
+\date{}
+\begin{document}
+\maketitle
+\section{Notation}
+\noindent In this section, I will go through some of the notation that I use on the Pam and Hubbard models. \\
+\\
+The natural number $N$ will denote the number of sites in the Hubbard model, or number of top/bottom row sites in the Pam model (Pam has $2N$ sites).
+The leftmost Hubbard site is called site $0$, and site numbers increment by one to the right until reaching the last site $N-1$.
+For Pam, the top left site is called site $0$, incrementing by one moving directly to the right until the top right site $N-1$.
+The bottom left site is site number $N$, and increments by one moving directly to the right unitl reaching the bottom right site $2N-1$.
+The numbering comes from thinking of the Hubbard model being modified with an extra $N$ bottom row sites. \\
+\\
+Electron up and down spin amounts are respectively called ups and downs, for example a setup could be Pam with $N=3$, ups $=1$, downs $=2$. \\
+\\
+Electron configurations, which I call states, are represented using an ordered list $[\;,\;,\;,\;]$ notation.
+Each state (represented as a list) contains ups $+$ downs entries.
+The first ups entries describe what sites the up electrons are on, and the last downs entries describe what sites the down electrons are on.
+A number in an up or down electron entry represents the presence of that type of electron in the site number there.
+For example, consider Pam with $N=4$, ups $=1$, downs $=2$.
+The state with an up electron on site $0$, and down electrons on sites $0$ and $6$ is represented as $[0,0,6]$ or $[0,6,0]$.
+In my code, I have a system of removing repeat states, such as in the example (and also a method of identifying repeated states).
+Describing methods like this are not important for now. \\
+\\
+Electron interaction energies are denoted as $u$ for the Hubbard model (which has only one), for Pam the top row has an interaction term $u$ and bottom row has an interaction term $ulow$. \\
+\\
+Coupling values for the Hubbard model (for some site number $N$) are denoted $t=[t[0], t[1],\dots,t[N-2]]$, where $t[i]$ is the coupling term between sites $i$ and $i+1$.
+For the Pam model, the same Hubbard $t$ notation is used for the top row, the couplings connecting the top and bottom rows are denoted $v=[v[0], v[1],\dots,v[N-1]]$, where $v[i]$ is the coupling connecting sites $i$ and $(i+N)\text{ mod}(2N)$. \\
+\\
+The hamiltonian matrix for either model is denoted $H$. \\
+\\
+A time under consideration for either model is usually denoted $time$. \\
+\\
+We will usually use Python notation when referencing things.
+For example, $H[:,0]$ means the $0$th column of $H$.
+
+
+
+
+\section{Probability matrices}
+\subsection{Basic description}
+Setting $\hbar=1$, to evolve a state $\psi$ (from some $time=0$) in time, we compute:
+\[\psi(time)=\exp(-iH\cdot time)\psi\]
+where $H$ and $\psi$ are expressed in terms of the Fock basis. \\
+In our computations, we always take $\psi=\text{numpy.zeros}(N)$ (or $\text{numpy.zeros}(2N)$ for Pam) then set $\psi[\text{statenumber}]=1$, and evolve this initial state over some time.
+So, $\psi$ is basically just a standard basis vector; a vector with $0$'s everywhere except at $1$ at the state we are interested in; thinking in terms of $\R^n$, $\psi=e_i$ for some statenumber $i$. \\
+\\
+Multiplying a matrix on its right by $e_i$ returns the $i$th column of the matrix.
+Meaning $\psi(time)=\exp(-iH\cdot time)[:,\text{statenumber}]$; or just the $\text{statenumber}$th column of $\exp(-iH\cdot time)$. \\
+\\
+After we find $\psi(time)$ in our computations, we usually find $\text{numpy.abs}(\psi(time))**2$; the complex conjugate squared of the state we receive.
+This is a probability mass function, with entries representing the probability to find the system in that entries respective state number.
+For example, $\text{numpy.abs}(\psi(time))**2[3]$ is the probability (fidelity) to find the system in the state corresponding to statenumber $3$. \\
+\\
+Now lets step back and think of the process that we just did.
+We took the statenumberth column of $\exp(-iH\cdot time)$, found the complex conjugate squared of each entry, and took whatever other statenumber component of this that we were interested in.
+If we just took the complex conjugate squared of each entry of $\exp(-iH\cdot time)$, then its $i$th column would represent starting at statenumber $i$ and that columns $j$th row would represent the fidelity of going to the $j$th statenumber.
+So, entry $(i,j)$ of numpy.abs($\exp(-iH\cdot time))**2$ represents the fidelity of going from state $i$ to $j$ in a time of $time$.
+\subsection{Hubbard}
+In this section, we will look at some probability matrices from the Hubbard model.
+\subsubsection{First matrix}
+Running dual annealing gives us the following Hubbard model configuration (it was told to take two electrons from the left to right):
+\begin{align*}
+    \text{Fidelity} &= 0.9904599676492388 \\
+    u &= 3.0 \\
+    time &= 19.756922349839446 \\
+    N &= 4 \\
+    ups &= 1 \\
+    downs &= 1 \\
+    \text{starting} &= [0,0]\\
+    \text{ending} &=  [3,3] \\
+    t &= [0.44667982909520254,1.6461515831168911,0.44667982909520254]
+\end{align*}
+This set of parameters was chosen for use in another section, but we can look at its probability matrix here. \\
+\\
+At this instant in time, the probability matrix looks like:
+\begin{center}
+    \includegraphics*[scale= 1]{HubbardFirstMatrixProbabilityMatrix.png}
+\end{center}
+To know what states are going where, we need our ordered basis:
+\begin{align*}
+    [0, 0]\; 0 \\
+    [0, 1]\; 1 \\
+    [0, 2]\; 2 \\
+    [0, 3]\; 3 \\
+    [1, 0]\; 4 \\
+    [1, 1]\; 5 \\
+    [1, 2]\; 6 \\
+    [1, 3]\; 7 \\
+    [2, 0]\; 8 \\
+    [2, 1]\; 9 \\
+    [2, 2]\; 10 \\
+    [2, 3]\; 11 \\
+\end{align*}
+\begin{align*}
+    [3, 0]\; 12 \\
+    [3, 1]\; 13 \\
+    [3, 2]\; 14 \\
+    [3, 3]\; 15
+\end{align*}
+We can see a bright red dot representing what dual annealing found in the probability matrix at entry $(0,15)$; $0$ is state $[0, 0]$ and $15$ is state $[3,3]$. \\
+\\
+There is also a dot at $(15,0)$ saying that we can go in reverse from $(0,15)$ (right to left).
+There are also bright dots at $(3,3)$ and $(12,12)$; though not as high of fidelity of what we found earlier since we can see the presence of another entry in their rows.
+Since these are diagonal entries, the probability matrix says if you start at those states and go to this time, you will likely find the state back where it started. \\
+\\
+The following link contains an animation of the probability matrix of this Hubbard setup with time going from $0$ to $100$ in steps of $0.1$.
+\url{https://imgur.com/kMzNOyd}
+if the link does not work or you want to see it in a different speed, let me know. \\
+\\
+Interestingly, this probability matrix does not seem to have as nice of an oscillation pattern as I have seen others (though I have not seen too many others yet).
+
+\subsection{Second matrix}
+Running dual annealing for $N=4$, $ups=1$, $downs=1$, keeping $u$ fixed at a moderately high value, $time$ moderate, and high $t$ values, we get:
+\begin{align*}
+    \text{Fidelity} &= 0.9906232663657644 \\
+    u &= 10.5 \\
+    time &= 18.546213830891528 \\
+    N &= 4 \\
+    ups &= 1 \\
+    downs &= 1 \\
+    \text{starting} &= [0,0] \\
+    \text{ending} &= [3,3] \\
+    t &= [41.08749790290679,119.36531527701335,41.08749790290679]
+\end{align*}
+At this time, the probability matrix looks like:
+\begin{center}
+    \includegraphics*[scale= 1]{HubbardSecondMatrixProbabilityMatrix.png}
+\end{center}
+And a link for an animation of this:
+\url{https://imgur.com/a/pizuMzb}
+
+Interestingly, Dual Annealing gave similar times for this Hubbard run and the previous one.
+
+\subsection{Pam}
+In this section, we will look at some probability matrices from the Pam model.
+\subsection{First matrix}
+Running dual annealing on an $N=6$, $ups=1$, $downs=1$ Pam (keeping $u$ and $ulow$ fixed) gives:
+\begin{align*}
+    \text{Fidelity} &= 0.9976206992659102 \\
+    u &= 0 \\
+    ulow &= 10.5 \\
+    time &= 172.6912156467187 \\
+    N &= 6 \\
+    ups &= 1 \\
+    downs &= 1 \\
+    \text{starting} &= [0,0] \\
+    \text{ending} &= [5,5] \\
+    t &= [8.163858423237452,3.4369559917039116,9.894572285197075, \\
+    &3.4369559917039116,8.163858423237452] \\
+    v &= [0.7455234808799717,0.1,0.1,0.1,0.1,0.7455234808799717]
+\end{align*}
+For fun, I ran the animation for time going between $0$ and $1000$, which made the animation too large to upload on imgur, so here is a youtube upload of it.
+\url{https://www.youtube.com/watch?v=fwnKxKcxu9Y} \\
+\\
+This probability matrix looks like a pretty standard Pam one that I have seen for different values of $N$ (though I have always ran my dual annealing taking two electrons from the top left to top right).
+Some features are the prescence of states that stay the same the entire time; that is have a fidelity of almost $1$ to stay in the same state.
+To notice these, recall that diagonal entries of the probability matrix represent the fidelity of going from a state back to itself (that is, entry $(i,i)$ represents the fidelity of going from state $i$ to state $i$, if we see this persists for a long time we can say state $i$ just stays there).
+There seem to be a lot of these for time lower than $100$, but most of these fade away leaving just a few for high times.
+By playing around with a few trials, it seems that for low time, states that start with both electrons on the bottom row generally have a decently high to high fidelity of staying put; though this would have to be tested more.
+
+\subsection{Conclusions}
+I showed just a few probability matrices here (I will add more later), but from looking at probability matrices from other runs, they seem to have the same general patterns as the ones presented here.
+Hubbard models oscillate around in a almost random seeming pattern.
+Pam models oscillate fairly predicatably (top left goes through the same patterns, bottom right also).
+Something interesting is that "dead" states show up pretty regularly for the Pam model.
+That is, states that have a high fidelity of not transfering anywhere over time.
+To catch these, see what elements on the diagonal of a probability matrix stay red as time goes on.
+For low time, there looks to be a lot of these, but most fade away at higher times, leaving just a few.
+
+
+
+
+
+\section{Hubbard to Pam}
+\subsection{Introduction}
+In this section, I will go through some attempts at taking a set of Hubbard parameters with good fidelity to a set of Pam parameters with good fidelity.
+The inspiration comes from thinking of the Hubbard model embedded in the Pam model.
+Finding good sets of parameters in the Hubbard model with dual annealing is fairly easy for a given $N$ and amount of up and down electrons, while the same $N$ and up/down electrons in Pam is noticably more difficult.
+If we can run the easier Hubbard model and carry over results to the Pam model, then that would make finding Pam results easier. \\
+\\
+Fixing $N$, ups, downs, and states to transfer to and from, the Hubbard model tries calculate $N-1$ coupling $t$ values (with symmetry on coupling values, this is reduced by around half depending on if $N$ is even or odd), an interaction energy $u$, and a time.
+Using symmetry on the coupling values, we try to find a set of around $\dfrac{N}{2}+2$ values.
+For Pam, we try to find the same parameters, with the addition of $N$ $v$ values and interaction energy $ulow$.
+Using symmetry, this turns out to be around $N+3$ values that we try to find. \\
+\\
+From dual annealing on Pam, it seems like finding good parameters is a lot more difficult with the prescence of nonzero $u$ and $ulow$ values; I find it not bad to run fixing $u$ at $0$ and varying $ulow$, but a lot more difficult when I want both to be nonzero.
+If we can take a set of $t$ values, $u$, and $time$ from the Hubbard model, then finding good Pam setups might be noticably easier. \\
+\\
+Here, I will go through my attempts to take a fixed Hubbard setup and make it into a Pam setup.
+I have chosen to use the Hubbard run described in section $2.2.1$ to do these attempts on, which is a fairly low $N$ for Hubbard, but for Pam the amount of sites is double the Hubbard amount.
+For reference, the Hubbard parameters I will be working with are:
+\begin{align*}
+    \text{Fidelity} &= 0.9904599676492388 \\
+    u &= 3.0 \\
+    time &= 19.756922349839446 \\
+    N &= 4 \\
+    ups &= 1 \\
+    downs &= 1 \\
+    \text{starting} &= [0,0]\\
+    \text{ending} &=  [3,3] \\
+    t &= [0.44667982909520254,1.6461515831168911,0.44667982909520254]
+\end{align*}
+\subsection{First attempt, uniform $v$'s and varying $ulow$}
+After embedding a Hubbard model into a Pam model, the only things missing to test out fidelities are $v$ values and $ulow$ value (in this attempt and all future ones, we will be focusing on calculating the fidelity transfering from the Hubbard embedding starting position to its final one). \\
+\\
+First attempt failed.
+Generally tried making the $v$'s as small as possible and $ulow$ also.
+Got up to around $0.6$ fidelity when I tried to prevent $v$ and $ulow$ from being quite small.
+\subsubsection{Adding varying time}
+Allowing time to vary increases the fidelity a bit, but not too much and the same trend continues.
+\subsection{Second attempt, nonuniform (but symmetric) $v$'s and varying $ulow$}
+Now we will allow the $v$'s to be different from eachother, but use mirror image symmetry.
+For our $N=4$ case, this means $v=[v^1,v^2,v^3,v^4]=[v^1,v^2,v^2,v^1]$. \\
+\\
+We get results similar to the previous attempt.
+\subsubsection{Adding varying time}
+Allowing time to vary and keeping the $v$ values and $ulow$ from being too close to $0$, we get a decently high fidelity set of parameters:
+\begin{align*}
+    \text{Fidelity} &= 0.8938345337135122 \\
+    u &= 3.0 \\
+    ulow &= 22.59365812546358 \\
+    time &= 98.53869943801845 \\
+    N &= 4 \\
+    ups &= 1 \\
+    downs &= 1 \\
+    \text{starting} &= [0,0]\\
+    \text{ending} &=  [3,3] \\
+    t &= [0.44667982909520254,1.6461515831168911,0.44667982909520254] \\
+    v &= [1.7554205434830537,2.3429015026428455,2.3429015026428455,1.7554205434830537]
+\end{align*}
+dual annealing did not run too long for this result to be obtained, so trying to run this for longer could have good results.
+\subsection{Third attempt, multiples of $t$, uniform $v$'s, and varying $ulow$}
+We will now do some runs that vary a value $c$, have uniform $v$'s, and varies $ulow$.
+The purpose of the variable $c$ is to set $t=c\cdot thubbard$; multiplying the hubbard values we found by some constant. \\
+\\
+This attempt got to around $0.9$ fidelity pretty quick, but made the $t$ values fairly high.
+\subsubsection{Adding varying time}
+Running for a bit, we got a decently high run:
+\begin{align*}
+    \text{Fidelity} &= 0.9471177339609289 \\
+    u &= 3.0 \\
+    ulow &= 85.00536172378806 \\
+    time &= 84.83359402902337 \\
+    N &= 4 \\
+    ups &= 1 \\
+    downs &= 1 \\
+    \text{starting} &= [0,0]\\
+    \text{ending} &=  [3,3] \\
+    t &= [2.098601266960662,7.733986566924454,2.098601266960662] \\
+    v &= [17.23528771766342,17.23528771766342,17.23528771766342,17.23528771766342]
+\end{align*}
+Although this run did not have an optimal fidelity, it gave a fairly high fidelity with parameter ranges I have not really seen before.
+This run ended up with high $v$ values and lower $t$ values, which it is usually the opposite (also a pretty high $ulow$).
+\subsection{Fourth attempt, multiples of $t$, nonuniform (but symmetric) $v$'s, varying time, and varying $ulow$}
+Running this for a bit gave mid $0.9$'s fidelity, like other attempts.
+But, I got a bit lazy and did not give this method too much time to run.
+\subsection{Conclusions}
+For the Hubbard model that I embedded into Pam, this method did not easily find a super high fidelity configuration.
+But, I was a bit lazy and did not really run any method for too long; maybe ten minutes at maximum.
+I might try running the fourth attempt's configuration for a longer time, maybe different parameter ranges, and on different Hubbard setups.
+I am thinking that with enough time this method might get a decent run to appear, or that certain Hubbard runs are "dead" and do not easily translate to Pam runs.
+
+
+
+
+
+
+
+
+\end{document}
